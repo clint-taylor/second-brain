@@ -22,23 +22,27 @@ A personal productivity app for a single user to capture thoughts, reminders, ac
 - Audit Log records all categorisation actions
 
 ### 3. Data Storage
-- Each category stored in a database or structured file
+- Each category is stored in a YAML file (the 'database'), with one or more YAML files per category as needed.
 - Fields per category:
     - People: name, context, follow up, last touched, tags
     - Projects: name, next action, last action, notes, status
     - Ideas: name, notes, tags, one liner
     - Admin: name, due date, status
     - Audit Log: original text, date, category, name, confidence score
-- Suggest further fields as needed during design
-- Secure local or Microsoft cloud storage (OneDrive/SharePoint)
+- Suggest further fields as needed during design.
+- YAML files are stored in a secure location (OneDrive/SharePoint or local folder).
 
 ### 4. Automation
-- Route new entries from Microsoft Forms to LLM for categorisation and storage
+- Route new entries from Microsoft Forms to a Power Automate flow or backend process.
+- The process writes the entry to the appropriate YAML file.
+- When a YAML file is updated or a new file is created, trigger a call to Copilot (LLM endpoint) with the YAML content, a system prompt, and a JSON Schema for the expected response.
+- Validate the returned JSON against the schema. If invalid, retry with a repair instruction.
+- Store/upsert the structured record and mark the file as processed (using checksum to de-duplicate).
 - Daily digest at 8am Monday to Friday: top 3 actions, stuck items, small win (≤2 min read)
 - Weekly digest: review activity, top 3 actions for next week, biggest unprogressed item, recurring theme
 - Automated delivery via Teams message (direct message to user for maximum visibility)
-- Use the simplest automation solution available (Power Automate preferred)
-- Attachments stored in OneDrive/SharePoint with links in the entry
+- Use the simplest automation solution available (Power Automate preferred). Power Automate can be used to detect new/changed YAML files and trigger the Copilot call.
+- Attachments stored in OneDrive/SharePoint with links in the YAML entry
 
 ### 5. Review & Correction
 - User can review categorisation and request changes (re-categorise, rename, etc.)
@@ -78,8 +82,32 @@ A personal productivity app for a single user to capture thoughts, reminders, ac
 ---
 
 ## Next Steps
+-
+## Copilot Integration Trigger
+
+## Copilot Response Handling
+
+After sending the YAML file to Copilot, the system must:
+
+1. Receive the JSON response from Copilot.
+2. Validate the response against the provided JSON Schema.
+3. If the response is invalid, retry the request with a "repair" instruction to Copilot, or log the error for manual review if repeated failures occur.
+4. If valid, upsert the structured data into the system of record (update the YAML file or another database as needed).
+5. Mark the file as processed (using checksum or metadata) to prevent duplicate processing.
+6. Log all actions for audit and troubleshooting.
+
+This flow ensures robust, automated processing of YAML data with Copilot, including error handling and data integrity.
+
+When a YAML file is created or updated (e.g., by a new entry from Microsoft Forms or a user correction), the system must trigger a process to send the YAML content to Copilot for processing. This can be achieved by:
+
+- Using Power Automate to monitor the storage location (OneDrive/SharePoint/local folder) for new or changed YAML files, then automatically call the Copilot (LLM) endpoint with the file content, a system prompt, and a JSON Schema for the expected response.
+- Alternatively, a backend service can watch for file changes and perform the same call to Copilot.
+
+The trigger should include file metadata (path, timestamp, checksum) to support deduplication and audit logging.
+
+This ensures that every new or modified YAML file is processed by Copilot in a timely and automated fashion, with no manual upload required.
 - Finalise open questions
-- Design data models and database structure
-- Select technology stack and integration points
+- Design YAML data models and file structure
+- Select technology stack and integration points (including Power Automate triggers for YAML file changes and Copilot API calls)
 - Develop MVP for data entry, categorisation, and digests
 - Test automation and review workflows
